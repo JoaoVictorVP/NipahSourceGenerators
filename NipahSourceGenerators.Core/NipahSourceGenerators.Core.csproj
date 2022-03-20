@@ -13,7 +13,22 @@
     <Description>A framework to make working with source generators in .NET easier
 
 Try the CodeBuilder type now!</Description>
+
+    <RepositoryUrl>https://github.com/JoaoVictorVP/NipahSourceGenerators</RepositoryUrl>
+
+    <PackageIcon>Rika vinho aaa.jpg</PackageIcon>
+
+    <PackageTags>Source Generators;Source;.NET;Compiler time code</PackageTags>
+
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\Pictures\Rika vinho aaa.jpg">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
