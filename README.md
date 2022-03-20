@@ -6,14 +6,14 @@
  Second, open your source generator project edit file
  Third, place the following code on it:
  ```csproj
-  <Compile Include="C:\Users\Furude Rika\source\repos\NipahSourceGenerators\NipahSourceGenerators.Core\NipahSourceGenerators\**\*.*">
+  <Compile Include="{YOUR_PATH}\NipahSourceGenerators\NipahSourceGenerators.Core\NipahSourceGenerators\**\*.*">
       <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="C:\Users\Furude Rika\source\repos\NipahSourceGenerators\NipahSourceGenerators.Core\NipahSourceGenerators\Thumbs.db" />
+    <Compile Remove="{YOUR_PATH}\NipahSourceGenerators\NipahSourceGenerators.Core\NipahSourceGenerators\Thumbs.db" />
   </ItemGroup>
  ```
  Now it should work properly when compilling!
