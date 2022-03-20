@@ -1,4 +1,6 @@
-﻿namespace NipahSourceGenerators.Core;
+﻿using System.Collections.Generic;
+
+namespace NipahSourceGenerators.Core;
 
 public class GType<TField, TProperty, TMethod> : GMember where TField : GField where TProperty : GProperty where TMethod : GMethod
 {

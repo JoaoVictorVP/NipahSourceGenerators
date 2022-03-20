@@ -1,4 +1,6 @@
-﻿namespace NipahSourceGenerators.Core;
+﻿using System;
+
+namespace NipahSourceGenerators.Core;
 
 [Flags]
 public enum MemberModifier
@@ -10,5 +12,6 @@ public enum MemberModifier
     Abstract = 8,
     Virtual = 16,
     Partial = 32,
-    Unsafe = 64
+    Unsafe = 64,
+    Async = 128
 }

@@ -1,4 +1,6 @@
-﻿namespace NipahSourceGenerators.Core.CSharp;
+﻿using System.Collections.Generic;
+
+namespace NipahSourceGenerators.Core.CSharp;
 
 public static class CSUtils
 {
@@ -64,6 +66,9 @@ public static class CSUtils
 
         if (modifier.HasFlag(MemberModifier.Abstract))
             final += "abstract ";
+
+        if (modifier.HasFlag(MemberModifier.Async))
+            final += "async ";
 
         return final;
     }

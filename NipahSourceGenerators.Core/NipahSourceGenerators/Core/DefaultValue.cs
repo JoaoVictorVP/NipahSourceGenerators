@@ -1,7 +1,10 @@
-﻿namespace NipahSourceGenerators.Core;
+﻿using System;
+
+namespace NipahSourceGenerators.Core;
 
 public struct Value
 {
+    public static readonly Value This = new Value { str = "this", constOnly = false };
     public static readonly Value Null = new Value { str = "null", constOnly = true };
 
     string str = null;
@@ -19,6 +22,21 @@ public struct Value
     /// <returns></returns>
     public static Value Source(string source) => new Value { str = source };
 
+    public static Value StringConcat(params Value[] concat)
+    {
+        string src = "";
+        bool first = true;
+        foreach(var c in concat)
+        {
+            if (!first)
+                src += '+';
+            else
+                first = false;
+            src += c;
+        }
+        return new Value { str = src };
+    }
+
     public static implicit operator Value(string literal) => new Value(literal);
     public static implicit operator string(Value value) => value.str;
 
@@ -32,6 +50,8 @@ public struct Value
     public static implicit operator Value(DBNull @null) => Null;
 
     public static implicit operator Value(InvokeBuilder invoke) => new Value(invoke);
+
+    public static implicit operator Value(ParamBuilder param) => Value.Source(param.Name);
 
     void set(string str, bool constOnly = false)
     {

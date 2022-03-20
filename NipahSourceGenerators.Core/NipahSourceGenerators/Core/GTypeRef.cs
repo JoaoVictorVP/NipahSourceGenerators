@@ -1,5 +1,7 @@
 ﻿global using defGType = NipahSourceGenerators.Core.GType<NipahSourceGenerators.Core.GField, NipahSourceGenerators.Core.GProperty, NipahSourceGenerators.Core.GMethod>;
 using Microsoft.CodeAnalysis;
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
@@ -17,19 +19,42 @@ public struct GTypeRef
     defGType g_type;
     Type def_type;
     internal ITypeSymbol s_type;
+    HardcodedType hardcoded;
+    bool asTask;
 
-    public bool IsNull => g_type == null && def_type == null && s_type == null;
+    public ITypeSymbol AsTypeSymbol() => s_type;
 
-    public string Name => g_type != null ? g_type.Name : (def_type != null ? def_type.Name : s_type.Name);
-    public string FullName => g_type != null ? g_type.FullName : (def_type != null ? (def_type == typeof(void) ? "void" : def_type.FullName) : s_type.ToDisplayString());
-    public GTypeRef BaseType => g_type != null ? g_type.BaseType : (def_type != null ? def_type.BaseType : s_type.BaseType.AsRef());
+    public GTypeRef AsTask()
+    {
+        asTask = true;
+        return this;
+    }
+
+    public bool IsNull => g_type == null && def_type == null && s_type == null && hardcoded == null;
+
+    public string Name => g_type != null ? g_type.Name : (def_type != null ? def_type.Name : (s_type != null ? s_type.Name : hardcoded.Name));
+    public string FullName => (asTask ? "System.Threading.Tasks.Task<" : "") + (g_type != null ? g_type.FullName : (def_type != null ? (def_type == typeof(void) ? "void" : def_type.FullName) : (s_type != null ? s_type.ToDisplayString() : hardcoded.FullName))) + (asTask ? ">" : "");
+    public GTypeRef BaseType => g_type != null ? g_type.BaseType : (def_type != null ? def_type.BaseType : (s_type != null ? s_type.BaseType.AsRef() : hardcoded.BaseType));
 
     public defGType TryGType() => g_type;
     public Type TryDefaultType() => def_type;
 
     public static implicit operator GTypeRef (defGType type) => new GTypeRef { g_type = type };
     public static implicit operator GTypeRef (Type type) => new GTypeRef { def_type = type };
+    public static implicit operator GTypeRef (HardcodedType type) => new GTypeRef { hardcoded = type };
     //public static implicit operator GTypeRef(ITypeSymbol type) => new GTypeRef { s_type = type };
+}
+public class HardcodedType
+{
+    public readonly string Name, FullName;
+    public GTypeRef BaseType;
+
+    public HardcodedType(string name, string fullName, GTypeRef baseType)
+    {
+        Name = name;
+        FullName = fullName;
+        BaseType = baseType;
+    }
 }
 public struct GMethodRef
 {

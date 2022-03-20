@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿/*using Newtonsoft.Json;*/
+using System;
+using System.Collections.Generic;
 
 namespace NipahSourceGenerators.Core;
 
@@ -10,7 +12,7 @@ public static class SourceGeneratorState
     public static object Get(string key) => state[key];
     public static T Get<T>(string key) => (T)state[key];
 
-    static string getId()
+    /*static string getId()
     {
         return AppDomain.CurrentDomain.FriendlyName;
     }
@@ -44,5 +46,5 @@ public static class SourceGeneratorState
             def.TypeNameHandling = TypeNameHandling.Auto;
             return def;
         };
-    }
+    }*/
 }

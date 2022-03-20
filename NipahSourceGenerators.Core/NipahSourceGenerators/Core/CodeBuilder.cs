@@ -1,4 +1,6 @@
 ﻿using NipahSourceGenerators.Core.CSharp;
+using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace NipahSourceGenerators.Core;
@@ -27,6 +29,9 @@ public struct CodeBuilder
     public TypeBuilder Class(string name, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default) => type(name, "class", visibily, modifiers, baseType);
     public TypeBuilder Struct(string name, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default) => type(name, "struct", visibily, modifiers, baseType);
 
+    public TypeBuilder Class(string name, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default, params GTypeRef[] interfaces) => type(name, "class", visibily, modifiers, baseType, interfaces);
+    public TypeBuilder Struct(string name, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default, params GTypeRef[] interfaces) => type(name, "struct", visibily, modifiers, baseType, interfaces);
+
     TypeBuilder type(string name, string kind, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default)
     {
         switch (modifiers)
@@ -42,6 +47,43 @@ public struct CodeBuilder
             code.AppendLine($" : {baseType.FullName} {{");
         else
             code.AppendLine(" {");
+
+        return new TypeBuilder(code);
+    }
+    TypeBuilder type(string name, string kind, MemberVisibility visibily = MemberVisibility.Public, MemberModifier modifiers = MemberModifier.None, GTypeRef baseType = default, Span<GTypeRef> interfaces = default)
+    {
+        switch (modifiers)
+        {
+            case MemberModifier.Const: throw new Exception("Types cannot be constant");
+            case MemberModifier.ReadOnly: throw new Exception("Types cannot be readonly");
+            case MemberModifier.Virtual: throw new Exception("Types cannot be virtual");
+        }
+
+        code.Append($"{visibily.ToCS()}{modifiers.ToCS()}{kind} {name}");
+
+        bool hasBaseType = baseType.IsNull is false;
+        bool hasInterfaces = interfaces is Span<GTypeRef> { Length: > 0 };
+
+        if (hasBaseType || hasInterfaces)
+            code.Append(" : ");
+
+        if (hasBaseType)
+            code.Append($"{baseType.FullName} ");
+        
+        if(hasInterfaces)
+        {
+            bool first = true;
+            foreach(var inter in interfaces)
+            {
+                if (!first)
+                    code.Append(", ");
+                else
+                    first = false;
+                code.Append(inter.FullName);
+            }
+        }
+
+        code.AppendLine("\n{");
 
         return new TypeBuilder(code);
     }
@@ -164,9 +206,43 @@ public struct MethodBuilder
         return this;
     }
 
+    public MethodBuilder Return(Value value)
+    {
+        code.AppendLine($"return {value};");
+        return this;
+    }
+
+    public MethodBuilder NonInitializedLocal(string name, GTypeRef type)
+    {
+        code.AppendLine($"{type.FullName} {name};");
+        return this;
+    }
+
+    public MethodBuilder Local(string name, GTypeRef type, Value value)
+    {
+        code.AppendLine($"{type.FullName} {name} = {value};");
+        return this;
+    }
+
+    public MethodBuilder Bind(string variable, Value value)
+    {
+        code.AppendLine($"{variable} = {value};");
+        return this;
+    }
+
     public MethodBuilder Invoke(GTypeRef type, string methodName, params Value[] args)
     {
         code.AppendLine(new InvokeBuilder(type, methodName, args).ToString() + ";");
+        return this;
+    }
+    public MethodBuilder Invoke(string path, params Value[] args)
+    {
+        code.AppendLine(new InvokeBuilder(path, args).ToString() + ";");
+        return this;
+    }
+    public MethodBuilder InvokeAsync(string path, params Value[] args)
+    {
+        code.AppendLine(new InvokeBuilder("await " + path, args).ToString() + ";");
         return this;
     }
 
@@ -188,12 +264,29 @@ public struct MethodBuilder
 /// </summary>
 public ref struct InvokeBuilder
 {
+    readonly bool isNew;
     readonly Span<string> parts;
     readonly Span<Value> args;
+    bool isAwait;
+
+    public InvokeBuilder Await()
+    {
+        if (isNew)
+            throw new Exception("Cannot await a constructor");
+
+        isAwait = true;
+
+        return this;
+    }
 
     public override string ToString()
     {
         string invoke = "";
+
+        if (isNew)
+            invoke = "new ";
+        else if (isAwait)
+            invoke = "await ";
 
         bool first = true;
         foreach(var part in parts)
@@ -222,16 +315,56 @@ public ref struct InvokeBuilder
         return invoke;
     }
 
-    public InvokeBuilder(Span<string> parts, Span<Value> args)
+    public InvokeBuilder(GTypeRef type, params Value[] args)
     {
+        this.isNew = true;
+        this.parts = new[] { type.FullName };
+        this.args = args;
+
+        isAwait = false;
+    }
+
+    public InvokeBuilder(string parts, Span<Value> args, bool isNew = false)
+    {
+        this.isNew = isNew;
+        this.parts = new[] { parts };
+        this.args = args;
+
+        isAwait = false;
+    }
+    public InvokeBuilder(string parts, bool isNew, params Value[] args)
+    {
+        this.isNew = isNew;
+        this.parts = new[] { parts };
+        this.args = args;
+
+        isAwait = false;
+    }
+
+    public InvokeBuilder(Span<string> parts, Span<Value> args, bool isNew = false)
+    {
+        this.isNew = isNew;
         this.parts = parts;
         this.args = args;
+
+        isAwait = false;
     }
 
     public InvokeBuilder(Span<string> parts, params Value[] args)
     {
+        this.isNew = false;
         this.parts = parts;
         this.args = args;
+
+        isAwait = false;
+    }
+    public InvokeBuilder(Span<string> parts, bool isNew, params Value[] args)
+    {
+        this.isNew = isNew;
+        this.parts = parts;
+        this.args = args;
+
+        isAwait = false;
     }
     /*public InvokeBuilder(Span<string> acessor, string methodName, params Value[] args)
     {
@@ -243,8 +376,19 @@ public ref struct InvokeBuilder
     }*/
     public InvokeBuilder(GTypeRef type, string methodName, params Value[] args)
     {
+        this.isNew = false;
         parts = new[] { type.FullName, methodName };
         this.args = args;
+
+        isAwait = false;
+    }
+    public InvokeBuilder(GTypeRef type, string methodName, bool isNew, params Value[] args)
+    {
+        this.isNew = isNew;
+        parts = new[] { type.FullName, methodName };
+        this.args = args;
+
+        isAwait = false;
     }
 }
 /// <summary>
@@ -252,6 +396,7 @@ public ref struct InvokeBuilder
 /// </summary>
 public struct ParamBuilder
 {
+    public string Name => name;
     string name;
     GTypeRef type;
     Value defValue;
@@ -265,3 +410,28 @@ public struct ParamBuilder
         this.defValue = defValue;
     }
 }
+/*public ref struct Span<T>
+{
+    public T this[int index]
+    {
+        get => array[index];
+        set => array[index] = value;
+    }
+
+    public readonly int Length;
+    T[] array;
+
+    public static implicit operator Span<T>(T[] array) => new Span<T>(array);
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        foreach (var item in array)
+            yield return item;
+    }
+
+    public Span(T[] array)
+    {
+        this.array = array;
+        Length = array.Length;
+    }
+}*/

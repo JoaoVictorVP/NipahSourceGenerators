@@ -1,4 +1,5 @@
 ﻿using NipahSourceGenerators.Core.Expressions;
+using System.Collections.Generic;
 using System.Text;
 
 namespace NipahSourceGenerators.Core;
